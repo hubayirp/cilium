@@ -1680,9 +1680,10 @@ func initKubeProxyReplacementOptions() {
 	}
 
 	if option.Config.EnableNodePort && len(option.Config.Devices) == 0 {
-		device, err := linuxdatapath.NodeDeviceNameWithDefaultRoute()
-		if err != nil {
-			msg := "BPF NodePort's external facing device could not be determined. Use --device to specify."
+		var err error
+
+		if option.Config.Devices, err = detectDevices(); err != nil {
+			msg := "BPF NodePort's external facing devices could not be determined. Use --device to specify."
 			if strict {
 				log.WithError(err).Fatal(msg)
 			} else {
@@ -1692,9 +1693,8 @@ func initKubeProxyReplacementOptions() {
 				option.Config.EnableExternalIPs = false
 			}
 		} else {
-			log.WithField(logfields.Interface, device).
-				Info("Using auto-derived device for BPF node port")
-			option.Config.Devices = []string{device}
+			log.WithField(logfields.Interface, option.Config.Devices).
+				Info("Using auto-derived devices for BPF node port")
 		}
 	}
 
@@ -1843,6 +1843,14 @@ func initKubeProxyReplacementOptions() {
 				"will be selected from all network namespaces on the host.")
 		}
 	}
+}
+
+func detectDevices() ([]string, error) {
+	device, err := linuxdatapath.NodeDeviceNameWithDefaultRoute()
+	if err != nil {
+		return nil, err
+	}
+	return []string{device}, nil
 }
 
 // checkNodePortAndEphemeralPortRanges checks whether the ephemeral port range
