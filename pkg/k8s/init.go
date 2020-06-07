@@ -67,6 +67,13 @@ func waitForNodeInformation(ctx context.Context, nodeName string) *nodeTypes.Nod
 func retrieveNodeInformation(nodeName string) (*nodeTypes.Node, error) {
 	requireIPv4CIDR := option.Config.K8sRequireIPv4PodCIDR
 	requireIPv6CIDR := option.Config.K8sRequireIPv6PodCIDR
+	// At this point it's not clear whether the device auto-detection will
+	// happen, as initKubeProxyReplacementOptions() might disable BPF NodePort.
+	// Anyway, to be on the safe side, don't give up waiting for a (Cilium)Node
+	// self object.
+	mightAutoDetectDevices :=
+		option.Config.KubeProxyReplacement != option.KubeProxyReplacementDisabled &&
+			(len(option.Config.Devices) == 0 || option.Config.DirectRoutingDevice == "")
 	var n *nodeTypes.Node
 
 	if option.Config.IPAM == ipamOption.IPAMOperator {
@@ -74,7 +81,7 @@ func retrieveNodeInformation(nodeName string) (*nodeTypes.Node, error) {
 		if err != nil {
 			// If no CIDR is required, retrieving the node information is
 			// optional
-			if !requireIPv4CIDR && !requireIPv6CIDR {
+			if !requireIPv4CIDR && !requireIPv6CIDR && !mightAutoDetectDevices {
 				return nil, nil
 			}
 
@@ -90,7 +97,7 @@ func retrieveNodeInformation(nodeName string) (*nodeTypes.Node, error) {
 		if err != nil {
 			// If no CIDR is required, retrieving the node information is
 			// optional
-			if !requireIPv4CIDR && !requireIPv6CIDR {
+			if !requireIPv4CIDR && !requireIPv6CIDR && !mightAutoDetectDevices {
 				return nil, nil
 			}
 
