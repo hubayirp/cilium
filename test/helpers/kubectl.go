@@ -2152,7 +2152,6 @@ func (kub *Kubectl) overwriteHelmOptions(options map[string]string) error {
 			return fmt.Errorf("Cannot retrieve Node IP for k8s1: %s", err)
 		}
 
-
 		opts := map[string]string{
 			"global.hostFirewall":         "true",
 			"global.kubeProxyReplacement": "strict",
